@@ -1,0 +1,8 @@
+
+*.exe
+*.gch
+*.o
+*.layout
+*.depend
+*.save-failed
+*.cbp

@@ -1,0 +1,34 @@
+(entry)[
+	//methan0l features demo;
+
+	def^a%100, b%a+25*10, c%"a+b=";		//variable definition (optional);
+	out^"a=", a, " b=", b, " ", c, a+b, $;	//output;
+	out^"Input test and basic maths",$;
+	in^"First number: ",num1,"Second number: ",num2;		//input with prompt strings;
+	out^"******************************************",$;
+	out^"Summation: ", num1+num2, $, "Subtraction: ", num1-num2, $, "Multiplication: ", num1*num2, $;
+	out^"Division: ", num1/num2, $, "Average: ", (num1+num2)/2, $;
+	out^"Exponentiation first**second: ",num1**num2,$;
+	out^"Exponentiation second**first: ",num2**num1,$;
+	out^"Square root (first): ",sqrt(num1),$;
+	out^"Square root (second): ",sqrt(num2),$;
+	out^"Sin(first): ",sin(num1),$;
+	out^"Sin(second): ",sin(num2),$;
+	out^"Cos(first): ",sqrt(num1),$;
+	out^"Cos(second): ",sqrt(num2),$;
+	out^"******************************************",$;
+	//Dynamic typing;
+	c%1000;
+	out^c, " ";
+	c%"cake";
+	out^c, $;
+	//Concatenation;
+	new_string%a$" concat test."$" Maybe it even works!";
+	out^new_string, $;
+	//Functions;
+	foo^;
+]
+
+(foo)[
+	out^"I am a dummy function!",$;
+]
