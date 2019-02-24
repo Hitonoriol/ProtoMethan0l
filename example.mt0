@@ -1,6 +1,12 @@
-(entry)[
-	//methan0l features demo;
-
+(entry)[ //methan0l features demo;
+	tmc%5;
+	i%0;
+	out^"Cycle test!",$;
+	times (i,tmc*2)[		//cycles;
+		out^"test ",i,$;
+	]
+	
+	
 	def^a%100, b%a+25*10, c%"a+b=";		//variable definition (optional);
 	out^"a=", a, " b=", b, " ", c, a+b, $;	//output;
 	out^"Input test and basic maths",$;
@@ -25,7 +31,7 @@
 	//Concatenation;
 	new_string%a$" concat test."$" Maybe it even works!";
 	out^new_string, $;
-	//Functions;
+	//Functions		TODO: args and return values;
 	foo^;
 ]
 

@@ -37,7 +37,7 @@ class Runner{
         typedef exprtk::parser<double>             parser_t;
         parser_t mathparser;
         bool funcExists(std::string func);
-        std::string escapeStructs(std::string str, std::regex rtimes);
+        std::string escapeStructs(std::string str, std::regex rgx, std::string structname);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
         std::regex rfunc, rbody, rtimes, rif, rwhen;

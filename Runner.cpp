@@ -14,12 +14,12 @@ void Runner::purge(bool everything){
     this->modules.clear();
 }
 
-std::string Runner::escapeStructs(std::string str, std::regex rtimes){
+std::string Runner::escapeStructs(std::string str, std::regex rgx, std::string structname){
     std::smatch rtm;
     std::string tmid, delim = "{$}";
-    while(std::regex_search(str, rtm, rtimes)){
+    while(std::regex_search(str, rtm, rgx)){
         tmid = "${"+randString()+"};";
-        varSet(tmid, rtm.str(1)+delim+rtm.str(2));
+        varSet(tmid, structname+delim+rtm.str(1)+delim+rtm.str(2));
         str.erase(rtm.position(), rtm.length());
         str.insert(rtm.position(), tmid);
     }
@@ -31,7 +31,7 @@ void Runner::parseStructs(std::string code){
     std::string tmp = code, tname, tcode;
     std::pair<std::string, Program> placeholder;
     Program temp;
-    tmp = escapeStructs(tmp,rtimes);
+    tmp = escapeStructs(tmp,rtimes, "times");
     while(std::regex_search(tmp, raw, rfunc)){
             tname = raw[1];
             if (std::regex_search(tmp, raw, rbody)){
@@ -195,7 +195,7 @@ std::string Runner::parseBasicExpressions(std::string str, std::string excl){
     else if (!isNum(str)){
         return varGet(str);
     }
-    else return "err";
+    else return "nil";
 }
 
 void Runner::exec(Program program, std::vector<std::string> args){
@@ -218,7 +218,25 @@ void Runner::exec(Program program, std::vector<std::string> args){
             }
             if (cmd.substr(0,2) == "${"){
                 cmd = varGet(cmd+";");
-                std::cout<<cmd<<std::endl;
+                auto rbf = split(cmd,"\\{\\$\\}");
+                std::string op = rbf[0], params = rbf[1], rcode = rbf[2];
+                trim(op);
+                trim(params);
+                trim(rcode);
+                if (op == "times") {
+                    auto plst = parseList(params);  //0->counter(variable)   1->end value(everything)
+                    trim(plst[0]);
+                    trim(plst[1]);
+                    if (!varExists(plst[0]))
+                        varSet(plst[0], 0);
+                    int ci = std::stoi(parseBasicExpressions(plst[1])), dc=0;
+                    Program cprg(rcode);
+                    for (int cc = std::stoi(varGet(plst[0])); cc<ci; cc++){
+                        exec(cprg);
+                        dc++;
+                        varSet(plst[0], dc);
+                    }
+                }
             }
             else if (op == "def"){     //def^a%10,b%a,c%"test string";
                 varlist = arglist;
