@@ -1,3 +1,4 @@
+<pre>
 ------------------------------------------
 Methan0l interpreted programming language.
 		FEB 2019		  
@@ -24,3 +25,5 @@ variable%["string"|math expression|integer];
 myvar%oldvar+sin(45);
 
 userfunc^[arg1,arg2,arg3,...];
+
+</pre>
