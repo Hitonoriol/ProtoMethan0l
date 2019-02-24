@@ -3,6 +3,9 @@
 Methan0l interpreted programming language.
 		FEB 2019		  
 ------------------------------------------
+Command line args:
+methan0l [program source]
+
 Operators and symbols:
 ^ - argument list delimiter (e.g. function^var,"text",123;)
 $ - 1) if used in out^ function (e.g. out^$;), creates a new line,
