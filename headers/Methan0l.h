@@ -8,9 +8,11 @@
 #include <sstream>
 #include <algorithm>
 #include <fstream>
+#include <random>
 #include "Str.h"
 
 bool containsAll(std::string str, std::vector<std::string> wlist);
+std::string randString(int len = 32);
 
 class Files{
     public:
@@ -35,9 +37,10 @@ class Runner{
         typedef exprtk::parser<double>             parser_t;
         parser_t mathparser;
         bool funcExists(std::string func);
+        std::string escapeStructs(std::string str, std::regex rtimes);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
-        std::regex rfunc, rbody;
+        std::regex rfunc, rbody, rtimes, rif, rwhen;
         std::string strExpConcat(std::string str);
         std::string replaceVarExp(std::string str);
         void varSet(std::string var, auto what);

@@ -5,6 +5,7 @@
 Runner::Runner(){
     this->rfunc = "\\((.*?)\\)";
     this->rbody = "\\[(.*?)\\]";
+    this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
 }
 
 void Runner::purge(bool everything){
@@ -13,20 +14,41 @@ void Runner::purge(bool everything){
     this->modules.clear();
 }
 
+std::string Runner::escapeStructs(std::string str, std::regex rtimes){
+    std::smatch rtm;
+    std::string tmid, delim = "{$}";
+    while(std::regex_search(str, rtm, rtimes)){
+        tmid = "${"+randString()+"};";
+        varSet(tmid, rtm.str(1)+delim+rtm.str(2));
+        str.erase(rtm.position(), rtm.length());
+        str.insert(rtm.position(), tmid);
+    }
+    return str;
+}
+
 void Runner::parseStructs(std::string code){
     std::smatch raw;
     std::string tmp = code, tname, tcode;
     std::pair<std::string, Program> placeholder;
     Program temp;
+    tmp = escapeStructs(tmp,rtimes);
     while(std::regex_search(tmp, raw, rfunc)){
-        tname = raw[1];
-        if (std::regex_search(tmp, raw, rbody)){
-            tcode = raw[1];
-            placeholder = std::make_pair(tname,Program(tcode));
-            modules.insert(placeholder);
-        }
-        tmp = raw.suffix();
+            tname = raw[1];
+            if (std::regex_search(tmp, raw, rbody)){
+                tcode = raw[1];
+                placeholder = std::make_pair(tname,Program(tcode));
+                modules.insert(placeholder);
+            }
+            tmp = raw.suffix();
     }
+}
+
+std::string randString(int len) {
+     std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+     std::random_device rd;
+     std::mt19937 generator(rd());
+     std::shuffle(str.begin(), str.end(), generator);
+     return str.substr(0, len);
 }
 
 void Runner::dump(){
@@ -63,7 +85,7 @@ std::string Runner::varGet(std::string var){
     if (varExists(var))
         return this->var[var];
     else
-        return "0";
+        return "none";
 }
 
 bool isNum(std::string s){
@@ -154,7 +176,7 @@ std::string Runner::parseBasicExpressions(std::string str, std::string excl){
 
     }
     else if (str[0] != '"' && contains(str, "$")){
-        return strExpConcat(str);          //varSet(tmplist[0], strExpConcat(tmp));
+        return strExpConcat(str);
     }
     else if (str[0] == '"'){
         if (contains(str,"$")){
@@ -194,7 +216,11 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 op = "";
                 arglist = "";
             }
-            if (op == "def"){     //def^a%10,b%a,c%"test string";
+            if (cmd.substr(0,2) == "${"){
+                cmd = varGet(cmd+";");
+                std::cout<<cmd<<std::endl;
+            }
+            else if (op == "def"){     //def^a%10,b%a,c%"test string";
                 varlist = arglist;
                 explist = parseList(varlist);
                 if (explist.size() == 0)
@@ -240,6 +266,10 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     getline(std::cin, buf);
                     varSet(var, buf);
                 }
+            }
+            else if (std::regex_search(cmd, res, this->rtimes)){
+                std::string times = res[1], code = res[2];
+                std::cout<<times<<" "<<code<<std::endl;
             }
             else if (contains(cmd,"^")){    //func^arg1,arg2;
                 auto bf = split(cmd,"\\^");

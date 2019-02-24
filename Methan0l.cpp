@@ -16,6 +16,7 @@ if (argc > 1){
         else
             methan0l.run("(entry)[" + in + ";]");
         methan0l.purge(false);
+        std::cout<<std::endl;
     }
 }
 }
