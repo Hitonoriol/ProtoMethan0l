@@ -26,4 +26,11 @@ myvar%oldvar+sin(45);
 
 userfunc^[arg1,arg2,arg3,...];
 
+times (counter, [int var|constant|math expression])[
+	operators;
+]
+Example:
+times (i, 100)[
+	out^sin(i)," ",cos(i),$;
+]
 </pre>
