@@ -13,6 +13,7 @@
 
 bool containsAll(std::string str, std::vector<std::string> wlist);
 std::string randString(int len = 32);
+bool isMathExp(std::string arg);
 
 class Files{
     public:

@@ -6,6 +6,7 @@ Runner::Runner(){
     this->rfunc = "\\((.*?)\\)";
     this->rbody = "\\[(.*?)\\]";
     this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
+    this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
 }
 
 void Runner::purge(bool everything){
@@ -19,7 +20,22 @@ std::string Runner::escapeStructs(std::string str, std::regex rgx, std::string s
     std::string tmid, delim = "{$}";
     while(std::regex_search(str, rtm, rgx)){
         tmid = "${"+randString()+"};";
-        varSet(tmid, structname+delim+rtm.str(1)+delim+rtm.str(2));
+        if (structname == "times")
+            varSet(tmid, structname+delim+rtm.str(1)+delim+rtm.str(2));
+        else if (structname == "if") {
+            std::string cond = rtm[1], ops = rtm[2], els="no", scond;
+            try {
+                els = rtm[3];
+                scond = rtm[5];
+            } catch(const std::exception& e){
+                //no else block (can't be detected another way... i guess.)
+            }
+            if (els!="no"){
+                varSet(tmid, structname+delim+cond+delim+ops+delim+els+delim+scond);
+            } else {
+                varSet(tmid, structname+delim+cond+delim+ops);
+            }
+        }
         str.erase(rtm.position(), rtm.length());
         str.insert(rtm.position(), tmid);
     }
@@ -32,6 +48,7 @@ void Runner::parseStructs(std::string code){
     std::pair<std::string, Program> placeholder;
     Program temp;
     tmp = escapeStructs(tmp,rtimes, "times");
+    tmp = escapeStructs(tmp,rif, "if");
     while(std::regex_search(tmp, raw, rfunc)){
             tname = raw[1];
             if (std::regex_search(tmp, raw, rbody)){
