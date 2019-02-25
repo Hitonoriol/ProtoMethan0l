@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <stack>
 #include <regex>
 #include <vector>
 #include <utility>
@@ -9,10 +10,11 @@
 #include <algorithm>
 #include <fstream>
 #include <random>
+#include <ctime>
 #include "Str.h"
 
 bool containsAll(std::string str, std::vector<std::string> wlist);
-std::string randString(int len = 32);
+std::string randString(size_t len = 32);
 bool isMathExp(std::string arg);
 
 class Files{
@@ -35,15 +37,18 @@ class Runner{
     public:
         typedef exprtk::symbol_table<double> symbol_table_t;
         typedef exprtk::expression<double>     expression_t;
+        typedef exprtk::expression<double>     logicalexpr_t;
         typedef exprtk::parser<double>             parser_t;
         parser_t mathparser;
+        parser_t logicparser;
         bool funcExists(std::string func);
+        bool parseLogicalExpression(std::string str);
         std::string escapeStructs(std::string str, std::regex rgx, std::string structname);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
         std::regex rfunc, rbody, rtimes, rif, rwhen;
         std::string strExpConcat(std::string str);
-        std::string replaceVarExp(std::string str);
+        std::string replaceVarExp(std::string str, bool ifs = false);
         void varSet(std::string var, auto what);
         std::string varGet(std::string var);
         Runner();
@@ -53,6 +58,7 @@ class Runner{
         void run(std::string code);
         void exec(Program program, std::vector<std::string> args = {});
     private:
+        std::string ret;
         std::map<std::string,std::string> var;
         std::map<std::string,Program> modules;
 

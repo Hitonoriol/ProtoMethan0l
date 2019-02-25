@@ -3,6 +3,7 @@
 // (entry)[def a,b,c; get a,b,c; inc a; dmp a;](sub:arg1,arg2,arg3)[arg1+arg2-arg3=sub; ret;]
 
 Runner::Runner(){
+    srand (time(NULL));
     this->rfunc = "\\((.*?)\\)";
     this->rbody = "\\[(.*?)\\]";
     this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
@@ -60,12 +61,19 @@ void Runner::parseStructs(std::string code){
     }
 }
 
-std::string randString(int len) {
-     std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-     std::random_device rd;
-     std::mt19937 generator(rd());
-     std::shuffle(str.begin(), str.end(), generator);
-     return str.substr(0, len);
+std::string randString(size_t length) {
+    auto randchar = []() -> char
+    {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
 }
 
 void Runner::dump(){
@@ -172,9 +180,15 @@ std::string Runner::strExpConcat(std::string str){
     return ret;
 }
 
-std::string Runner::replaceVarExp(std::string str){
+std::string Runner::replaceVarExp(std::string str, bool ifs){
+    std::string key,val;
     for (std::pair<std::string, std::string> unit : this->var){
-        str = replaceall(str, unit.first, unit.second);
+        key = unit.first;
+        val = unit.second;
+        if (ifs && !isNum(val)){
+            val = "'"+val+"'";
+        }
+        str = replaceall(str, key, val);
     }
     return str;
 }
@@ -184,6 +198,13 @@ bool Runner::funcExists(std::string func){
         return false;
     else
         return true;
+}
+
+bool Runner::parseLogicalExpression(std::string str){
+    logicalexpr_t expression;
+    str = replaceVarExp(str,true);
+    logicparser.compile(str,expression);
+    return expression.value();
 }
 
 std::string Runner::parseBasicExpressions(std::string str, std::string excl){
@@ -236,11 +257,12 @@ void Runner::exec(Program program, std::vector<std::string> args){
             if (cmd.substr(0,2) == "${"){
                 cmd = varGet(cmd+";");
                 auto rbf = split(cmd,"\\{\\$\\}");
-                std::string op = rbf[0], params = rbf[1], rcode = rbf[2];
+                std::string op = rbf[0];
                 trim(op);
-                trim(params);
-                trim(rcode);
                 if (op == "times") {
+                    std::string params = rbf[1], rcode = rbf[2];
+                    trim(params);
+                    trim(rcode);
                     auto plst = parseList(params);  //0->counter(variable)   1->end value(everything)
                     trim(plst[0]);
                     trim(plst[1]);
@@ -253,7 +275,19 @@ void Runner::exec(Program program, std::vector<std::string> args){
                         dc++;
                         varSet(plst[0], dc);
                     }
+                } else if (op == "if"){
+                    int iflen = rbf.size();
+                        if (parseLogicalExpression(rbf[1])){
+                            Program ifprog(rbf[2]);
+                            exec(ifprog);
+                        } else {
+                            if (iflen != 4){//then else block exists
+                                Program ifprog(rbf[4]);
+                                exec(ifprog);
+                            }
+                        }
                 }
+
             }
             else if (op == "def"){     //def^a%10,b%a,c%"test string";
                 varlist = arglist;
@@ -301,10 +335,6 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     getline(std::cin, buf);
                     varSet(var, buf);
                 }
-            }
-            else if (std::regex_search(cmd, res, this->rtimes)){
-                std::string times = res[1], code = res[2];
-                std::cout<<times<<" "<<code<<std::endl;
             }
             else if (contains(cmd,"^")){    //func^arg1,arg2;
                 auto bf = split(cmd,"\\^");
