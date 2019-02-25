@@ -36,4 +36,10 @@ Example:
 times (i, 100)[
 	out^sin(i)," ",cos(i),$;
 ]
+
+if (var1|expression ==|<|>|!= var2|expression and|or ...)[
+	...
+] else [
+	...
+]
 </pre>
