@@ -2,7 +2,12 @@
 
 Program::Program(std::string contents){
     this->contents = contents;
+    this->args = 0;
     this->queueExec();
+}
+
+void Program::setArgNames(std::vector<std::string> argsn){
+    this->argn = argsn;
 }
 
 void Program::setCont(std::string arg){

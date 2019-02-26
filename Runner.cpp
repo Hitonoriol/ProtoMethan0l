@@ -7,6 +7,7 @@ Runner::Runner(){
     this->rfunc = "\\((.*?)\\)";
     this->rbody = "\\[(.*?)\\]";
     this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
+    this->rwhile = "while.*?\\((.*?)\\)\\[(.*?)\\]";
     this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
 }
 
@@ -21,7 +22,7 @@ std::string Runner::escapeStructs(std::string str, std::regex rgx, std::string s
     std::string tmid, delim = "{$}";
     while(std::regex_search(str, rtm, rgx)){
         tmid = "${"+randString()+"};";
-        if (structname == "times")
+        if (structname == "times" || structname == "while")
             varSet(tmid, structname+delim+rtm.str(1)+delim+rtm.str(2));
         else if (structname == "if") {
             std::string cond = rtm[1], ops = rtm[2], els="no", scond;
@@ -48,13 +49,22 @@ void Runner::parseStructs(std::string code){
     std::string tmp = code, tname, tcode;
     std::pair<std::string, Program> placeholder;
     Program temp;
+    std::vector<std::string> arl;
     tmp = escapeStructs(tmp,rtimes, "times");
     tmp = escapeStructs(tmp,rif, "if");
+    tmp = escapeStructs(tmp,rwhile, "while");
     while(std::regex_search(tmp, raw, rfunc)){
             tname = raw[1];
             if (std::regex_search(tmp, raw, rbody)){
                 tcode = raw[1];
-                placeholder = std::make_pair(tname,Program(tcode));
+                if (contains(tname, ":")){
+                    arl = split(tname,"\\:");
+                    tname = arl[0];
+                    arl = parseList(arl[1]);
+                }
+                temp = Program(tcode);
+                temp.setArgNames(arl);
+                placeholder = std::make_pair(tname,temp);
                 modules.insert(placeholder);
             }
             tmp = raw.suffix();
@@ -173,8 +183,8 @@ std::string Runner::strExpConcat(std::string str){
         }
         else if (var[0] == '"'){
             ret+=strim(var);
-        } else{
-            ret+=varGet(var);
+        } else {
+            ret+=parseBasicExpressions(var);
         }
     }
     return ret;
@@ -229,6 +239,14 @@ std::string Runner::parseBasicExpressions(std::string str, std::string excl){
     }
     else if (isNum(str)){
         return str;
+    } else if (contains(str,"^")){  // func^a,b,func^c
+        std::string tfunc = split(str,"\\^")[0];
+        auto args = parseList(str.substr(tfunc.size()));
+        trim(tfunc);
+        if (funcExists(tfunc)){
+            exec(modules[tfunc],args);
+            return ret;
+        }   else return "err";
     }
     else if (!isNum(str)){
         return varGet(str);
@@ -275,7 +293,15 @@ void Runner::exec(Program program, std::vector<std::string> args){
                         dc++;
                         varSet(plst[0], dc);
                     }
-                } else if (op == "if"){
+                } else if (op == "while"){
+                    std::string cond = rbf[1], wcode = rbf[2];
+                    trim(cond);
+                    trim(wcode);
+                    while(parseLogicalExpression(cond)){
+                        exec(wcode);
+                    }
+                }
+                 else if (op == "if"){
                     int iflen = rbf.size();
                         if (parseLogicalExpression(rbf[1])){
                             Program ifprog(rbf[2]);
@@ -335,20 +361,24 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     getline(std::cin, buf);
                     varSet(var, buf);
                 }
+            } else if (op == "return"){
+                ret = parseBasicExpressions(arglist);
             }
             else if (contains(cmd,"^")){    //func^arg1,arg2;
                 auto bf = split(cmd,"\\^");
                 std::string fname = bf[0];
                 std::string argss = cmd.substr(fname.size()+1);
                 trim(fname);
-                if (!funcExists(fname))
+                if (!funcExists(fname)){
+                    std::cout<<"Function "<<fname<<"does not exist."<<'\n';
                     continue;
+                }
                 auto args = parseList(argss);
                 exec(modules[fname], args);
             }
 
             else if (contains(cmd,"%")){            //var%var2+500*foo;
-                auto rexpr = split(cmd,"%");
+                auto rexpr = split(cmd,"\\%");
                 std::string var = rexpr[0], expr = rexpr[1];
                 trim(var);
                 trim(expr);

@@ -16,6 +16,9 @@
 bool containsAll(std::string str, std::vector<std::string> wlist);
 std::string randString(size_t len = 32);
 bool isMathExp(std::string arg);
+bool contains(std::string str, std::string what);
+std::vector<std::string> split(std::string input, std::string regex);
+std::vector<std::string> parseList(std::string rawlist);
 
 class Files{
     public:
@@ -26,7 +29,10 @@ class Files{
 class Program{
     public:
     std::string contents;
+    int args;
     std::vector<std::string> queued;
+    std::vector<std::string> argn;
+        void setArgNames(std::vector<std::string> argsn);
         Program(std::string contents="nop;");
         void queueExec();
         void setCont(std::string arg);
@@ -46,7 +52,7 @@ class Runner{
         std::string escapeStructs(std::string str, std::regex rgx, std::string structname);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
-        std::regex rfunc, rbody, rtimes, rif, rwhen;
+        std::regex rfunc, rbody, rtimes, rif, rwhile;
         std::string strExpConcat(std::string str);
         std::string replaceVarExp(std::string str, bool ifs = false);
         void varSet(std::string var, auto what);
