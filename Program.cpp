@@ -18,8 +18,9 @@ void Program::setCont(std::string arg){
 void Program::queueExec(){
     std::stringstream tstream(this->contents);
     std::string buf;
-    while(getline(tstream, buf, ';')) {
-        trim(buf);
-        this->queued.push_back(buf);
+    auto lbuf = split(contents,"(?![\\w\\s]*[\\\"]);(?!\\\")");
+    for (auto line : lbuf){
+        trim(line);
+        this->queued.push_back(line);
     }
 }

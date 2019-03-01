@@ -15,18 +15,18 @@ namespace AutoVersion{
 	
 	//Standard Version Type
 	static const long MAJOR  = 0;
-	static const long MINOR  = 7;
-	static const long BUILD  = 149;
-	static const long REVISION  = 819;
+	static const long MINOR  = 8;
+	static const long BUILD  = 153;
+	static const long REVISION  = 838;
 	
 	//Miscellaneous Version Types
-	static const long BUILDS_COUNT  = 241;
-	#define RC_FILEVERSION 0,7,149,819
-	#define RC_FILEVERSION_STRING "0, 7, 149, 819\0"
-	static const char FULLVERSION_STRING [] = "0.7.149.819";
+	static const long BUILDS_COUNT  = 246;
+	#define RC_FILEVERSION 0,8,153,838
+	#define RC_FILEVERSION_STRING "0, 8, 153, 838\0"
+	static const char FULLVERSION_STRING [] = "0.8.153.838";
 	
 	//These values are to keep track of your versioning state, don't modify them.
-	static const long BUILD_HISTORY  = 24;
+	static const long BUILD_HISTORY  = 3;
 	
 
 }

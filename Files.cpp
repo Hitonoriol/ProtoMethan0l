@@ -5,6 +5,7 @@ std::string Files::readFile(std::string path) {
   std::string str, result;
   while (std::getline(input, str)) {
     result += str;
+    result += " ";
   }
   return result;
 }
