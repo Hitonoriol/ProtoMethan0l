@@ -42,4 +42,15 @@ if (var1|expression ==|<|>|!= var2|expression and|or ...)[
 ] else [
 	...
 ]
+
+while (var1|expression ==|<|>|!= var2|expression and|or ...)[
+	...
+]
+
+round^variable|expression, precision; -- does not  change the variable directly, returns the rounded value.
+Example:
+a % 150.7984;
+out^"Integer: ", (round^a,0), $;
+
+! If you want to include a return of one function as argument into another brackets () are mandatory.
 </pre>
