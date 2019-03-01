@@ -11,7 +11,10 @@ if (argc > 1){
     while(true){
         std::cout<<"Methan0l::";
         getline(std::cin, in);
-        if (isMathExp(in)){
+        if (in == "dump"){
+            methan0l.dump();
+        }
+        else if (isMathExp(in)){
             std::cout<<methan0l.parseBasicExpressions(in);
         }
         else if (containsAll(in, {"(",")","[","]","entry"}))

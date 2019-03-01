@@ -87,8 +87,9 @@ std::string randString(size_t length) {
 }
 
 void Runner::dump(){
-    for (auto dmp : this->modules){
-        std::cout<<dmp.first<<" -> "<<dmp.second.contents<<std::endl;
+    std::cout<<"Variable dump"<<'\n';
+    for (auto dmp : this->var){
+        std::cout<<dmp.first<<" -> "<<dmp.second<<std::endl;
     }
 }
 
@@ -101,7 +102,26 @@ std::vector<std::string> split(std::string input, std::string regex) {
 }
 
 std::vector<std::string> parseList(std::string rawlist){
-    return split(rawlist,",");
+    std::smatch res;
+    bool nst = false;
+    std::string rpl;
+    std::regex nest("(\\((.*?)\\^(.*?)\\))");
+    while (std::regex_search(rawlist,res,nest)){
+        nst = true;
+        rpl = strim(replaceall(res.str(0),",","{c}"));
+        rawlist.erase(res.position(),res.length());
+        rawlist.insert(res.position(),rpl);
+    }
+    auto tr = split(rawlist,",");
+    if (!nst) return tr;
+    if (tr.size() == 0) tr = {rawlist};
+    for (std::string &tmp : tr){
+        if (contains(tmp,"{c}")){
+            tmp = replaceall(tmp,"{c}",",");
+            trim(tmp);
+        }
+    }
+    return tr;
 }
 
 bool Runner::varExists(std::string arg){
@@ -124,6 +144,7 @@ std::string Runner::varGet(std::string var){
 }
 
 bool isNum(std::string s){
+    s = replaceall(s,".","");
     return !s.empty() && std::find_if(s.begin(),
         s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
 }
@@ -233,20 +254,16 @@ std::string Runner::parseBasicExpressions(std::string str, std::string excl){
         else
             return strim(str);
     }
+    else if (contains(str,"^")){  // func^a,b,func^c
+        exec(Program(str+";"));
+        return ret;
+    }
     else if (isMathExp(str)){
         str = replaceVarExp(str);
         return solveMathExpr(str);
     }
     else if (isNum(str)){
         return str;
-    } else if (contains(str,"^")){  // func^a,b,func^c
-        std::string tfunc = split(str,"\\^")[0];
-        auto args = parseList(str.substr(tfunc.size()));
-        trim(tfunc);
-        if (funcExists(tfunc)){
-            exec(modules[tfunc],args);
-            return ret;
-        }   else return "err";
     }
     else if (!isNum(str)){
         return varGet(str);
@@ -331,6 +348,11 @@ void Runner::exec(Program program, std::vector<std::string> args){
                         varSet(tmplist[0], parseBasicExpressions(tmp));
                     }
                 }
+            } else if (op == "round"){  //round^expr,precision;
+                explist = parseList(arglist);
+                trim(explist[0]);
+                trim(explist[1]);
+                ret = str(stod(parseBasicExpressions(explist[0])), atoi(parseBasicExpressions(explist[1]).c_str()));
             }
             else if (op == "out") {   //out^a," ",228;
                 varlist = arglist;
@@ -363,38 +385,34 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 }
             } else if (op == "return"){
                 ret = parseBasicExpressions(arglist);
-            }
-            else if (contains(cmd,"^")){    //func^arg1,arg2;
-                auto bf = split(cmd,"\\^");
-                std::string fname = bf[0];
-                std::string argss = cmd.substr(fname.size()+1);
-                trim(fname);
-                if (!funcExists(fname)){
-                    std::cout<<"Function "<<fname<<"does not exist."<<'\n';
-                    continue;
-                }
-                auto args = parseList(argss);
-                exec(modules[fname], args);
-            }
-
-            else if (contains(cmd,"%")){            //var%var2+500*foo;
+            } else if (contains(cmd,"%")){            //var%var2+500*foo;
                 auto rexpr = split(cmd,"\\%");
                 std::string var = rexpr[0], expr = rexpr[1];
                 trim(var);
                 trim(expr);
                 varSet(var,parseBasicExpressions(expr));
+            } else if (contains(cmd,"^")){    //func^arg1,arg2;
+                auto bf = split(cmd,"\\^");
+                std::string fname = bf[0];
+                std::string argss = cmd.substr(fname.size()+1);
+                trim(fname);
+                if (!funcExists(fname)){
+                    std::cout<<"Function "<<fname<<" does not exist."<<'\n';
+                    continue;
+                }
+                auto args = parseList(argss);
+                exec(modules[fname], args);
             }
             i++;
         }
     }
     catch (const std::exception& e) {
-        std::cout<<"Fatal error has occurred."<<std::endl<<e.what();
+        std::cout<<"Fatal error has occurred near "<<cmd<<std::endl<<e.what();
     }
 }
 
 void Runner::run(std::string code){
     this->parseStructs(code);
-    //this->dump();
     std::map<std::string,Program>::const_iterator entrypt = modules.find("entry");
     if (entrypt == modules.end()) {
         std::cout<<"Entry function not found."<<std::endl;

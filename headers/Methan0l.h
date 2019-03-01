@@ -8,17 +8,21 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
+#include <functional>
 #include <fstream>
 #include <random>
 #include <ctime>
+#include <set>
 #include "Str.h"
 
 bool containsAll(std::string str, std::vector<std::string> wlist);
 std::string randString(size_t len = 32);
 bool isMathExp(std::string arg);
 bool contains(std::string str, std::string what);
+std::string replaceall(std::string subject, const std::string& search, const std::string& replace);
 std::vector<std::string> split(std::string input, std::string regex);
 std::vector<std::string> parseList(std::string rawlist);
+std::string strim (std::string str);
 
 class Files{
     public:
@@ -64,8 +68,9 @@ class Runner{
         void run(std::string code);
         void exec(Program program, std::vector<std::string> args = {});
     private:
+        int floatprecision = 6;
         std::string ret;
-        std::map<std::string,std::string> var;
+        varlist_t var;
         std::map<std::string,Program> modules;
 
         void parseStructs(std::string code);
