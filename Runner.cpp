@@ -9,6 +9,8 @@ Runner::Runner(){
     this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
     this->rwhile = "while.*?\\((.*?)\\)\\[(.*?)\\]";
     this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
+    this->rnest = "(\\((.*?)\\^(.*?)\\))";
+    this->rsubstr = "(\\((.*?)\\))\\s*\\^";
 }
 
 void Runner::purge(bool everything){
@@ -101,12 +103,11 @@ std::vector<std::string> split(std::string input, std::string regex) {
     return {first, last};
 }
 
-std::vector<std::string> parseList(std::string rawlist){
+std::vector<std::string> Runner::parseList(std::string rawlist){
     std::smatch res;
     bool nst = false;
     std::string rpl;
-    std::regex nest("(\\((.*?)\\^(.*?)\\))");
-    while (std::regex_search(rawlist,res,nest)){
+    while (std::regex_search(rawlist,res,rnest)){
         nst = true;
         rpl = strim(replaceall(res.str(0),",","{c}"));
         rawlist.erase(res.position(),res.length());
@@ -391,6 +392,20 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 trim(var);
                 trim(expr);
                 varSet(var,parseBasicExpressions(expr));
+            } else if (std::regex_search(cmd, res, this->rsubstr)){   //(start[,end])^var; -- substr
+                op = arglist;
+                trim(op);
+                arglist = strim(res.str(1));
+                auto ls = parseList(arglist);
+                for (auto &arg : ls){
+                    trim(arg);
+                    arg = parseBasicExpressions(arg);
+                }
+                if (ls.size() == 1){
+                    ret = parseBasicExpressions(op).substr(std::stoi(ls[0]));
+                } else {
+                    ret = parseBasicExpressions(op).substr(std::stoi(ls[0]), std::stoi(ls[1]));
+                }
             } else if (contains(cmd,"^")){    //func^arg1,arg2;
                 auto bf = split(cmd,"\\^");
                 std::string fname = bf[0];

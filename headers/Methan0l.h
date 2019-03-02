@@ -53,10 +53,11 @@ class Runner{
         parser_t logicparser;
         bool funcExists(std::string func);
         bool parseLogicalExpression(std::string str);
+        std::vector<std::string> parseList(std::string rawlist);
         std::string escapeStructs(std::string str, std::regex rgx, std::string structname);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
-        std::regex rfunc, rbody, rtimes, rif, rwhile;
+        std::regex rfunc, rbody, rtimes, rif, rwhile, rnest, rsubstr;
         std::string strExpConcat(std::string str);
         std::string replaceVarExp(std::string str, bool ifs = false);
         void varSet(std::string var, auto what);
