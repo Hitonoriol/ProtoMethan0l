@@ -53,4 +53,10 @@ a % 150.7984;
 out^"Integer: ", (round^a,0), $;
 
 ! If you want to include a return of one function as argument into another brackets () are mandatory.
+
+Substring function:
+(start[,length])^variable|expression
+Example:
+out^((3,3)^"onetwothree")  <-- prints "two"
+
 </pre>
