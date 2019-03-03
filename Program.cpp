@@ -1,9 +1,7 @@
 #include "headers/Methan0l.h"
 
 Program::Program(std::string contents){
-    this->contents = contents;
-    this->args = 0;
-    this->queueExec();
+    setCont(contents);
 }
 
 void Program::setArgNames(std::vector<std::string> argsn){
@@ -18,9 +16,8 @@ void Program::setCont(std::string arg){
 void Program::queueExec(){
     std::stringstream tstream(this->contents);
     std::string buf;
-    auto lbuf = split(contents,"(?![\\w\\s]*[\\\"]);(?!\\\")");
+    auto lbuf = split(contents,"\\;");
     for (auto line : lbuf){
-        trim(line);
         this->queued.push_back(line);
     }
 }

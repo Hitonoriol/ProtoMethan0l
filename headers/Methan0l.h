@@ -16,6 +16,7 @@
 #include "Str.h"
 
 bool containsAll(std::string str, std::vector<std::string> wlist);
+void stripReserved(std::string& arg);
 std::string randString(size_t len = 32);
 bool isMathExp(std::string arg);
 bool contains(std::string str, std::string what);
@@ -51,13 +52,18 @@ class Runner{
         typedef exprtk::parser<double>             parser_t;
         parser_t mathparser;
         parser_t logicparser;
+        void varForceSet(std::string var, auto what);
+        bool isReadOnly(std::string var);
+        void setReadOnly(std::string var);
         bool funcExists(std::string func);
+        void varDel(std::string var);
         bool parseLogicalExpression(std::string str);
+        std::string getArrayCell(std::string cmd);
         std::vector<std::string> parseList(std::string rawlist);
         std::string escapeStructs(std::string str, std::regex rgx, std::string structname);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
-        std::regex rfunc, rbody, rtimes, rif, rwhile, rnest, rsubstr;
+        std::regex rfunc, rbody, rtimes, rif, rwhile, rnest, rsubstr, rarr;
         std::string strExpConcat(std::string str);
         std::string replaceVarExp(std::string str, bool ifs = false);
         void varSet(std::string var, auto what);
@@ -69,6 +75,8 @@ class Runner{
         void run(std::string code);
         void exec(Program program, std::vector<std::string> args = {});
     private:
+        std::vector<std::string> ro;
+        std::vector<std::string> packed;
         int floatprecision = 6;
         std::string ret;
         varlist_t var;

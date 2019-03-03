@@ -11,6 +11,19 @@ Runner::Runner(){
     this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
     this->rnest = "(\\((.*?)\\^(.*?)\\))";
     this->rsubstr = "(\\((.*?)\\))\\s*\\^";
+    this->rarr = "(\\(\\s*\\[(.*?)\\])\\s*\\^\\s*(.+)\\)";
+}
+
+void Runner::varSet(std::string var, auto what){
+    if (isReadOnly(var))
+        return;
+    if (varExists(var)) this->var.erase(var);
+    this->var.insert(std::make_pair(var, str(what)));
+}
+
+void Runner::varForceSet(std::string var, auto what){
+    if (varExists(var)) this->var.erase(var);
+    this->var.insert(std::make_pair(var, str(what)));
 }
 
 void Runner::purge(bool everything){
@@ -39,6 +52,10 @@ std::string Runner::escapeStructs(std::string str, std::regex rgx, std::string s
             } else {
                 varSet(tmid, structname+delim+cond+delim+ops);
             }
+        }   else if (structname == "array"){
+            tmid = "${arr$"+randString()+"}";
+            varSet(tmid, rtm.str(0));
+            packed.push_back(tmid);
         }
         str.erase(rtm.position(), rtm.length());
         str.insert(rtm.position(), tmid);
@@ -52,6 +69,7 @@ void Runner::parseStructs(std::string code){
     std::pair<std::string, Program> placeholder;
     Program temp;
     std::vector<std::string> arl;
+    tmp = escapeStructs(tmp,rarr, "array");
     tmp = escapeStructs(tmp,rtimes, "times");
     tmp = escapeStructs(tmp,rif, "if");
     tmp = escapeStructs(tmp,rwhile, "while");
@@ -64,6 +82,11 @@ void Runner::parseStructs(std::string code){
                     tname = arl[0];
                     arl = parseList(arl[1]);
                 }
+                for (auto un : packed){
+                    tcode = replaceall(tcode,un,varGet(un));
+                    varDel(un);
+                }
+                packed.clear();
                 temp = Program(tcode);
                 temp.setArgNames(arl);
                 placeholder = std::make_pair(tname,temp);
@@ -114,6 +137,7 @@ std::vector<std::string> Runner::parseList(std::string rawlist){
         rawlist.insert(res.position(),rpl);
     }
     auto tr = split(rawlist,",");
+    if (!nst && tr.size() == 0) return {rawlist};
     if (!nst) return tr;
     if (tr.size() == 0) tr = {rawlist};
     for (std::string &tmp : tr){
@@ -132,16 +156,22 @@ bool Runner::varExists(std::string arg){
         return true;
 }
 
-void Runner::varSet(std::string var, auto what){
-    if (varExists(var)) this->var.erase(var);
-    this->var.insert(std::make_pair(var, str(what)));
+void Runner::varDel(std::string var) {
+    this->var.erase(var);
+}
+
+void stripReserved(std::string& arg){
+    std::vector<std::string> lst = {"{","}"};
+    for (auto ch : lst){
+        arg = replaceall(arg,ch,"");
+    }
 }
 
 std::string Runner::varGet(std::string var){
     if (varExists(var))
         return this->var[var];
     else
-        return "none";
+        return "";
 }
 
 bool isNum(std::string s){
@@ -151,7 +181,7 @@ bool isNum(std::string s){
 }
 
 bool isMathExp(std::string arg){
-    std::string sexp[] = {"**","+","-","*","/","sqrt","sin","cos","pi"};
+    std::string sexp[] = {"**","+","-","*","/","sqrt","sin","cos","pi","abs"};
     for (auto s : sexp){
         if (arg.find(s)!=std::string::npos){
             return true;
@@ -235,15 +265,21 @@ bool Runner::funcExists(std::string func){
 bool Runner::parseLogicalExpression(std::string str){
     logicalexpr_t expression;
     str = replaceVarExp(str,true);
+    str = replaceall(str,"\"","'");
     logicparser.compile(str,expression);
     return expression.value();
 }
 
 std::string Runner::parseBasicExpressions(std::string str, std::string excl){
+    trim(str);
+    std::string arr = getArrayCell("("+str+")");
     if (excl == "out" && str[0] == '$'){
         std::cout<<'\n';
         return "";
 
+    }
+    else if (arr != ""){
+        return varGet(arr);
     }
     else if (str[0] != '"' && contains(str, "$")){
         return strExpConcat(str);
@@ -272,15 +308,67 @@ std::string Runner::parseBasicExpressions(std::string str, std::string excl){
     else return "nil";
 }
 
+void Runner::setReadOnly(std::string var){
+    trim(var);
+    if (!isReadOnly(var)){
+        ro.push_back(var);
+    }
+}
+
+bool Runner::isReadOnly(std::string var){
+    for (auto el : ro){
+        if (el == var)
+            return true;
+    }
+    return false;
+}
+
+std::string Runner::getArrayCell(std::string cmd){
+std::string rs = "", op, szb, ceb,arrname;
+std::smatch res;
+cmd = replaceall(cmd," ","");
+if (std::regex_search(cmd, res, this->rarr)){    //([n]^array) <--nth element of array
+    arrname = res.str(3);       //array name
+    szb = varGet(arrname);      //array size
+    setReadOnly(arrname);
+    ceb = res.str(2);   //current element number
+    auto dims = parseList(szb), cebs = parseList(ceb);
+    if (dims[0] == "")
+        dims = cebs;
+    if (dims.size() != cebs.size())
+        return "";
+    int i = 0;
+    std::string newsize = "", edim, ecebs;
+    for (auto &dim : dims) {            //([1]^arr)%100
+        if (i>0)
+            newsize+=",";
+        edim = parseBasicExpressions(dim);
+        ecebs = parseBasicExpressions(cebs[i]);
+        if (atoi(edim.c_str())<atoi(ecebs.c_str()))
+            dim = ecebs;
+        else
+            dim = edim;
+        newsize+=dim;
+        i++;
+    }
+    rs = "{(["+newsize+"]^"+arrname+")}";
+    varForceSet(arrname, newsize);
+}
+return rs;
+}
+
 void Runner::exec(Program program, std::vector<std::string> args){
     std::size_t len = program.queued.size(), i = 0;
     std::smatch res;
     std::string cmd, arglist, op;
     std::vector<std::string> explist;
     std::string varlist, tmp;
+    std::string arr;
     try {
         while(i < len){
             cmd = program.queued[i];
+            trim(cmd);
+            arr = getArrayCell(cmd);
             if (contains(cmd,"^")){
                 op = split(cmd,"\\^")[0];
                 arglist = cmd.substr(op.size()+1);
@@ -366,7 +454,6 @@ void Runner::exec(Program program, std::vector<std::string> args){
                         if (var == "") continue;
                         std::cout<<var;
                 }
-
             }
             else if (op == "in") {  //in^"Input: ",var;
                 varlist = arglist;
@@ -384,14 +471,27 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     getline(std::cin, buf);
                     varSet(var, buf);
                 }
-            } else if (op == "return"){
+            } else if (op == "return"){     //return^expr;
                 ret = parseBasicExpressions(arglist);
+            } else if (op == "len"){    //len^expr;
+                trim(arglist);
+                ret = str(parseBasicExpressions(arglist).size());
+            } else if (op == "replace") {   //replace^source,old,new;
+                auto gr = parseList(arglist);
+                for (auto &pt : gr){
+                    pt = parseBasicExpressions(pt);
+                }
+                ret = replaceall(gr[0],gr[1],gr[2]);
             } else if (contains(cmd,"%")){            //var%var2+500*foo;
                 auto rexpr = split(cmd,"\\%");
                 std::string var = rexpr[0], expr = rexpr[1];
                 trim(var);
                 trim(expr);
-                varSet(var,parseBasicExpressions(expr));
+                std::string arr = getArrayCell(var), pexpr = parseBasicExpressions(expr);
+                if (arr != ""){
+                    varSet(arr, pexpr);
+                } else
+                    varSet(var,pexpr);
             } else if (std::regex_search(cmd, res, this->rsubstr)){   //(start[,end])^var; -- substr
                 op = arglist;
                 trim(op);
@@ -406,6 +506,8 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 } else {
                     ret = parseBasicExpressions(op).substr(std::stoi(ls[0]), std::stoi(ls[1]));
                 }
+            } else if (arr!=""){
+                    ret = varGet(arr);
             } else if (contains(cmd,"^")){    //func^arg1,arg2;
                 auto bf = split(cmd,"\\^");
                 std::string fname = bf[0];

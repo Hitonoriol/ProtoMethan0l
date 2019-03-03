@@ -37,13 +37,15 @@ times (i, 100)[
 	out^sin(i)," ",cos(i),$;
 ]
 
-if (var1|expression ==|<|>|!= var2|expression and|or ...)[
+! if and while operators accept only variables, (==|<|>|!=), (and|or).
+
+if (var1 ==|<|>|!= var2 and|or ...)[
 	...
 ] else [
 	...
 ]
 
-while (var1|expression ==|<|>|!= var2|expression and|or ...)[
+while (var1 ==|<|>|!= var2 and|or ...)[
 	...
 ]
 
@@ -58,5 +60,16 @@ Substring function:
 (start[,length])^variable|expression
 Example:
 out^((3,3)^"onetwothree")  <-- prints "two"
+
+String length:
+len^var|expr;
+
+String replace:
+replace^source,old,new;
+
+Arrays have dynamic size (when the element which exceeds current bounds is inserted, array size increases too):
+([n]^arrayname) % expr;   <-- sets nth array element to expr
+out^arrayname;  <-- outputs current array size (array name becomes reserved readonly variable which contains its size)
+out^([x,y,z]^arrayname);  <-- multidimensional arrays allowed
 
 </pre>
