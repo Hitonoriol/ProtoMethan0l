@@ -1,0 +1,15 @@
+(entry)[
+	flag % 1;
+	i % 0;
+	while(flag == 1)[
+		out^"Yeah",$;
+		if(i == 10)[
+			times(10)[
+				out^"Inner cycle",$;
+			]
+			flag % 0;
+		]
+		i % i+1;
+	]
+	out^"Ok.";
+]
