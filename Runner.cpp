@@ -32,10 +32,10 @@ void Runner::purge(bool everything){
     this->modules.clear();
 }
 
-std::string Runner::escapeStructs(std::string str, std::regex rgx, std::string structname){
+std::string Runner::escapeStruct(std::string str, std::regex rgx, std::string structname){
     std::smatch rtm;
     std::string tmid, delim = "{$}";
-    while(std::regex_search(str, rtm, rgx)){
+    std::regex_search(str, rtm, rgx);
         tmid = "${"+randString()+"};";
         if (structname == "times" || structname == "while")
             varSet(tmid, structname+delim+rtm.str(1)+delim+rtm.str(2));
@@ -59,8 +59,32 @@ std::string Runner::escapeStructs(std::string str, std::regex rgx, std::string s
         }
         str.erase(rtm.position(), rtm.length());
         str.insert(rtm.position(), tmid);
-    }
     return str;
+}
+
+std::string escapeStructs(std::string arg){
+    Blocks blocks;
+    size_t j = 0;
+    size_t opl = 0, cll = 0;
+    int opos, clpos, tokpos;
+    for (size_t i = 0; i < arg.size(); i++) {
+        if (arg[i] == '[') {
+            opos = i;
+            j = i;
+            while(arg[j] != '#') j--;
+            tokpos = j+1;
+            opl++;
+            if (opl > 1)
+                blocks.add(tokpos, opos, blocks.id(blocks.size()-1).start);
+            else
+                blocks.add(tokpos, opos);
+        }
+        else if (arg[i] == ']') {
+            clpos = i;
+            opl--;
+        }
+    }
+    return arg;
 }
 
 void Runner::parseStructs(std::string code){
@@ -69,10 +93,10 @@ void Runner::parseStructs(std::string code){
     std::pair<std::string, Program> placeholder;
     Program temp;
     std::vector<std::string> arl;
-    tmp = escapeStructs(tmp,rarr, "array");
-    tmp = escapeStructs(tmp,rtimes, "times");
-    tmp = escapeStructs(tmp,rif, "if");
-    tmp = escapeStructs(tmp,rwhile, "while");
+    //tmp = escapeStructs(tmp,rarr, "array");
+    //tmp = escapeStructs(tmp,rif, "if");
+    //tmp = escapeStructs(tmp,rwhile, "while");
+    //tmp = escapeStructs(tmp,rtimes, "times");
     while(std::regex_search(tmp, raw, rfunc)){
             tname = raw[1];
             if (std::regex_search(tmp, raw, rbody)){
@@ -357,6 +381,12 @@ if (std::regex_search(cmd, res, this->rarr)){    //([n]^array) <--nth element of
 return rs;
 }
 
+void Runner::panic(std::string err){
+    std::cout<<"\n"<<err;
+    getline(std::cin, err);
+    exit(-1);
+}
+
 void Runner::exec(Program program, std::vector<std::string> args){
     std::size_t len = program.queued.size(), i = 0;
     std::smatch res;
@@ -383,11 +413,13 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 auto rbf = split(cmd,"\\{\\$\\}");
                 std::string op = rbf[0];
                 trim(op);
-                if (op == "times") {
+                if (op == "times") {    //times(i, 100)[]
                     std::string params = rbf[1], rcode = rbf[2];
                     trim(params);
                     trim(rcode);
-                    auto plst = parseList(params);  //0->counter(variable)   1->end value(everything)
+                    auto plst = parseList(params);  //0->counter variable   1->end value
+                    if (plst.size() < 2)
+                        panic();
                     trim(plst[0]);
                     trim(plst[1]);
                     if (!varExists(plst[0]))
@@ -399,7 +431,7 @@ void Runner::exec(Program program, std::vector<std::string> args){
                         dc++;
                         varSet(plst[0], dc);
                     }
-                } else if (op == "while"){
+                } else if (op == "while"){      //while(i<j and foo!="bar")[]
                     std::string cond = rbf[1], wcode = rbf[2];
                     trim(cond);
                     trim(wcode);
@@ -515,7 +547,7 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 trim(fname);
                 if (!funcExists(fname)){
                     std::cout<<"Function "<<fname<<" does not exist."<<'\n';
-                    continue;
+                    panic();
                 }
                 auto args = parseList(argss);
                 exec(modules[fname], args);

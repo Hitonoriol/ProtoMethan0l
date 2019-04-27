@@ -25,6 +25,43 @@ std::vector<std::string> split(std::string input, std::string regex);
 std::vector<std::string> parseList(std::string rawlist);
 std::string strim (std::string str);
 
+class Block{
+    public:
+        int tok, start, bend, parent;
+        Block(int tok, int start, int bend, int parent = -1){
+            this->tok = tok;
+            this->start = start;
+            this->bend = bend;
+            this->parent = parent;
+        }
+};
+
+class Blocks{
+    public:
+        std::vector<Block> blocks;
+        void add(int tok, int start, int bend, int parent = -1){
+            Block block(tok, start, bend, parent);
+            blocks.push_back(block);
+        }
+        void add(int tok, int start, int parent = -1){
+            Block block(tok, start, -1, parent);
+            blocks.push_back(block);
+        }
+        Block getByStart(int start){
+            for (size_t i = 0; i < blocks.size(); i++)
+                if (blocks[i].start == start)
+                    return blocks[i];
+        }
+        Block getByEnd(int bend){
+            for (size_t i = 0; i < blocks.size(); i++)
+                if (blocks[i].bend == bend)
+                    return blocks[i];
+        }
+        Block id(int id){
+            return blocks[id];
+        }
+};
+
 class Files{
     public:
         static std::string readFile(std::string path);
@@ -58,9 +95,10 @@ class Runner{
         bool funcExists(std::string func);
         void varDel(std::string var);
         bool parseLogicalExpression(std::string str);
+        void panic(std::string err = "An error has occurred.");
         std::string getArrayCell(std::string cmd);
         std::vector<std::string> parseList(std::string rawlist);
-        std::string escapeStructs(std::string str, std::regex rgx, std::string structname);
+        std::string escapeStruct(std::string str, std::regex rgx, std::string structname);
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
         std::regex rfunc, rbody, rtimes, rif, rwhile, rnest, rsubstr, rarr;
