@@ -1,0 +1,7 @@
+#(entry) [
+	out^"Increment operator benchmark";
+	def^a%0;
+	#times(i, 10000) [
+		+^a;
+	]
+]

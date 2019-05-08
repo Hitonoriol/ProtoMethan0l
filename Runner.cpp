@@ -6,8 +6,8 @@ Runner::Runner(){
     srand (time(NULL));
     this->rfunc = "\\((.*?)\\)";
     this->rbody = "\\[(.*?)\\]";
-    this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
-    this->rwhile = "while.*?\\((.*?)\\)\\[(.*?)\\]";
+    this->rtimes = "times.*?\\((.*?)\\)\\s*\\[(.*?)\\]";
+    this->rwhile = "while.*?\\((.*?)\\)\\s*\\[(.*?)\\]";
     this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
     this->relse = "\\s*else(\\s*\\[(.*?)\\])";
     this->rnest = "(\\((.*?)\\^(.*?)\\))";
@@ -488,6 +488,9 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 arglist = cmd.substr(op.size()+1);
                 trim(op);
                 trim(arglist);
+                explist = parseList(arglist);
+                for (auto &item : explist)
+                    trim(item);
             } else {
                 op = "";
                 arglist = "";
@@ -538,12 +541,12 @@ void Runner::exec(Program program, std::vector<std::string> args){
                         }
                 }
 
+            } else if (op == "+") {
+                varSet(explist[0], str(atoi(varGet(explist[0]).c_str())+1));
+            } else if (op == "-") {
+                varSet(explist[0], str(atoi(varGet(explist[0]).c_str())-1));
             }
             else if (op == "def"){     //def^a%10,b%a,c%"test string";
-                varlist = arglist;
-                explist = parseList(varlist);
-                if (explist.size() == 0)
-                    explist = {varlist};
                 for (auto var : explist){
                     trim(var);
                     auto tmplist = split(var,"%");
@@ -556,20 +559,14 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     }
                 }
             } else if (op == "round"){  //round^expr,precision;
-                explist = parseList(arglist);
                 trim(explist[0]);
                 trim(explist[1]);
                 ret = str(stod(parseBasicExpressions(explist[0])), atoi(parseBasicExpressions(explist[1]).c_str()));
             } else if (op == "rnd") {   //rnd^min, max;
-                explist = parseList(arglist);
                 trim(explist[0]);
                 trim(explist[1]);
                 ret = str(randInt(atoi(explist[0].c_str()), atoi(explist[1].c_str())));
             } else if (op == "out") {   //out^a," ",42;
-                varlist = arglist;
-                explist = parseList(varlist);
-                if (explist.size() == 0)
-                    explist = {varlist};
                 for (auto var : explist){
                         trim(var);
                         var = parseBasicExpressions(var, "out");
@@ -578,12 +575,7 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 }
             }
             else if (op == "in") {  //in^"Input: ",var;
-                varlist = arglist;
-                explist = parseList(varlist);
                 std::string buf;
-                if (explist.size() == 0){
-                    explist = {varlist};
-                }
                 for (auto var : explist){
                     trim(var);
                     if (var[0] == '"'){
@@ -594,13 +586,11 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     varSet(var, buf);
                 }
             } else if (op == "prec") {  //prec^precicion;
-                explist = parseList(arglist);
                 prec = std::atoi(explist[0].c_str());
             }
             else if (op == "return"){     //return^expr;
                 ret = parseBasicExpressions(arglist);
             } else if (op == "len"){    //len^expr;
-                trim(arglist);
                 ret = str(parseBasicExpressions(arglist).size());
             } else if (op == "replace") {   //replace^source,old,new;
                 auto gr = parseList(arglist);
@@ -666,5 +656,5 @@ void Runner::run(std::string code){
         exec(entrypt->second);
     }
     te = timer();
-    std::cout<<"End of program execution. "<<(double)((te-tb)/1000.0)<<" seconds elapsed.\n";
+    std::cout<<"\nEnd of program execution. "<<(double)((te-tb)/1000.0)<<" seconds elapsed.\n";
 }

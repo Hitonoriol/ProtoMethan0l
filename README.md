@@ -29,7 +29,7 @@ myvar%oldvar+sin(45);
 
 userfunc^[arg1,arg2,arg3,...];
 
-! Block operators (times, if/else, while) must have '#' symbol at the beginning.
+! Block operators (times, if/else, while) and function definitions must have '#' symbol at the beginning.
 
 #times (counter, [int var|constant|math expression])[
 	operators;
@@ -49,6 +49,11 @@ Example:
 
 #while (var1 ==|<|>|!= var2 and|or ...)[
 	...
+]
+
+Return from function:
+#(func:arg, arg1)[
+	return^arg+arg1;
 ]
 
 round^variable|expression, precision; -- does not  change the variable directly, returns the rounded value.
@@ -74,6 +79,10 @@ prec^int;
 
 Random integer:
 rnd^min, max;
+
+Increment/decrement:
++^var;
+-^var;
 
 Arrays:
 Arrays have dynamic size (when the element which exceeds current bounds is inserted, array size increases too):

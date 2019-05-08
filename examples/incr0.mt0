@@ -1,0 +1,7 @@
+#(entry)[
+	out^"Increment through assignment benchmark";
+	def^a%0;
+	#times(i, 10000) [
+		a%a+1;
+	]
+]
