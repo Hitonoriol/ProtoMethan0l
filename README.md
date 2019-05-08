@@ -8,8 +8,8 @@ methan0l [program source]
 
 Operators and symbols:
 ^ - argument list delimiter (e.g. function^var,"text",123;)
-$ - 1) if used in out^ function (e.g. out^$;), creates a new line,
-    2) if used on variables and strings (e.g var$" foo "$sqrt(42);), concats all elements into one string.
+$ - 1) when used in out^ function (e.g. out^$;), creates a new line,
+    2) when used on variables and strings (e.g var$" foo "$sqrt(42);), acts like a concatenation operator.
 % - assignment operator
 () - function name brackets
 [] - block operator brackets
@@ -29,23 +29,25 @@ myvar%oldvar+sin(45);
 
 userfunc^[arg1,arg2,arg3,...];
 
-times (counter, [int var|constant|math expression])[
+! Block operators (times, if/else, while) must have '#' symbol at the beginning.
+
+#times (counter, [int var|constant|math expression])[
 	operators;
 ]
 Example:
-times (i, 100)[
+#times (i, 100)[
 	out^sin(i)," ",cos(i),$;
 ]
 
 ! if and while operators accept only variables, (==|<|>|!=), (and|or).
 
-if (var1 ==|<|>|!= var2 and|or ...)[
+#if (var1 ==|<|>|!= var2 and|or ...)[
 	...
-] else [
+] #else [
 	...
 ]
 
-while (var1 ==|<|>|!= var2 and|or ...)[
+#while (var1 ==|<|>|!= var2 and|or ...)[
 	...
 ]
 
@@ -65,11 +67,18 @@ String length:
 len^var|expr;
 
 String replace:
-replace^source,old,new;
+replace^source, old, new;
 
+Floating point precision:
+prec^int;
+
+Random integer:
+rnd^min, max;
+
+Arrays:
 Arrays have dynamic size (when the element which exceeds current bounds is inserted, array size increases too):
 ([n]^arrayname) % expr;   <-- sets nth array element to expr
-out^arrayname;  <-- outputs current array size (array name becomes reserved readonly variable which contains its size)
+out^arrayname;  <-- outputs current array size (array name -> reserved readonly variable which contains its size)
 out^([x,y,z]^arrayname);  <-- multidimensional arrays allowed
 
 </pre>

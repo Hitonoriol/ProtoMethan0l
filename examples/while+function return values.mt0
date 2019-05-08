@@ -1,13 +1,13 @@
-(entry)[
+#(entry)[
 	def^i % 1;
-	while(true)[
+	#while(true)[
 		out^"Sum #", i, $;
 		out^doTheThing^, $, $;
 		i % i+1;
 	]
 ]
 
-(doTheThing)[
+#(doTheThing)[
 	in^"Enter first number: ", a, "Enter second number: ", b;
 	ret % "Sum: "$a+b;
 	return^ret;

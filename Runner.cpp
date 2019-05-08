@@ -9,9 +9,14 @@ Runner::Runner(){
     this->rtimes = "times.*?\\((.*?)\\)\\[(.*?)\\]";
     this->rwhile = "while.*?\\((.*?)\\)\\[(.*?)\\]";
     this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
+    this->relse = "\\s*else(\\s*\\[(.*?)\\])";
     this->rnest = "(\\((.*?)\\^(.*?)\\))";
     this->rsubstr = "(\\((.*?)\\))\\s*\\^";
-    this->rarr = "(\\(\\s*\\[(.*?)\\])\\s*\\^\\s*(.+)\\)";
+    this->rarr = "(\\(\\s*\\[(.*?)\\])\\s*\\^\\s*(.*?)\\)";
+}
+
+int Runner::randInt(int min, int max) {
+    return min + rand() % (( max + 1 ) - min);
 }
 
 void Runner::varSet(std::string var, auto what){
@@ -32,11 +37,18 @@ void Runner::purge(bool everything){
     this->modules.clear();
 }
 
+std::string Runner::genUniqueVarID() {
+    std::string ret = "${" + randString() + "};";
+    while(varExists(ret))
+        ret = "${" + randString() + "};";
+    return  ret;
+}
+
 std::string Runner::escapeStruct(std::string str, std::regex rgx, std::string structname){
     std::smatch rtm;
     std::string tmid, delim = "{$}";
     std::regex_search(str, rtm, rgx);
-        tmid = "${"+randString()+"};";
+        tmid = genUniqueVarID();
         if (structname == "times" || structname == "while")
             varSet(tmid, structname+delim+rtm.str(1)+delim+rtm.str(2));
         else if (structname == "if") {
@@ -57,16 +69,14 @@ std::string Runner::escapeStruct(std::string str, std::regex rgx, std::string st
             varSet(tmid, rtm.str(0));
             packed.push_back(tmid);
         }
-        str.erase(rtm.position(), rtm.length());
-        str.insert(rtm.position(), tmid);
-    return str;
+    return tmid;
 }
 
-std::string escapeStructs(std::string arg){
+Blocks escapeStructs(std::string arg){
     Blocks blocks;
     size_t j = 0;
-    size_t opl = 0, cll = 0;
-    int opos, clpos, tokpos;
+    int opl = 0;
+    int opos, tokpos;
     for (size_t i = 0; i < arg.size(); i++) {
         if (arg[i] == '[') {
             opos = i;
@@ -75,16 +85,29 @@ std::string escapeStructs(std::string arg){
             tokpos = j+1;
             opl++;
             if (opl > 1)
-                blocks.add(tokpos, opos, blocks.id(blocks.size()-1).start);
+                blocks.add(tokpos, opos, blocks.nearestParent(opl).start, opl);
             else
                 blocks.add(tokpos, opos);
         }
         else if (arg[i] == ']') {
-            clpos = i;
+            blocks.setEnd(blocks.lastNotClosed().start, i);
             opl--;
         }
     }
-    return arg;
+    return blocks;
+}
+
+std::string Runner::escArrays(std::string str){
+    std::smatch rtm;
+    std::string tmid, delim = "{$}";
+    while(std::regex_search(str, rtm, rarr)){
+        tmid = "${arr$"+randString()+"}";
+        varSet(tmid, rtm[0]);
+        packed.push_back(tmid);
+        str.erase(rtm.position(), rtm.length());
+        str.insert(rtm.position(), tmid);
+    }
+    return str;
 }
 
 void Runner::parseStructs(std::string code){
@@ -93,10 +116,56 @@ void Runner::parseStructs(std::string code){
     std::pair<std::string, Program> placeholder;
     Program temp;
     std::vector<std::string> arl;
-    //tmp = escapeStructs(tmp,rarr, "array");
-    //tmp = escapeStructs(tmp,rif, "if");
-    //tmp = escapeStructs(tmp,rwhile, "while");
-    //tmp = escapeStructs(tmp,rtimes, "times");
+    tmp = escArrays(tmp);
+    Blocks smap = escapeStructs(tmp);
+
+    std::string opname, body;
+    auto dmp = smap.blocks;
+    int st, en, nest, tok, se = 0, epos = 0;
+    int ind = 0;
+    std::string saved = "", esc;
+    for (int c = smap.blocks.size()-1; c > 0; c--) {
+        nest = dmp[c].nest;
+        if (nest == 1)
+            continue;
+        st = dmp[c].start;
+        en = dmp[c].bend;
+        tok = dmp[c].tok;
+        int nend = tok;
+        while (tmp[nend]!=']')
+            nend++;
+        en = nend;
+        opname = tmp.substr(tok, st-tok);
+        body = tmp.substr(tok, (en-tok)+1);
+        for (int x = tok-2; tmp[x]==' ' || tmp[x]=='\t' || tmp[x]=='\n'; x--) {
+            ind++;
+        }
+        ind++;
+        if (saved != "") {
+            saved = body + saved;
+            body = saved;
+            esc = escapeStruct(saved, rif, "if");
+            en = se;
+            saved = "";
+        }
+        else if (std::regex_search(body, relse)) {
+            saved = body;
+            se = en;
+            ind = 0;
+            continue;
+        } else if (std::regex_search(body, rtimes))
+            esc = escapeStruct(body, rtimes, "times");
+        else if (std::regex_search(body, rwhile))
+            esc = escapeStruct(body, rwhile, "while");
+        else if (std::regex_search(body, rif))
+            esc = escapeStruct(body, rif, "if");
+        else
+            panic("Unknown block operator: " + body);
+        epos = ((en-tok)+ind) + 1;
+        tmp.erase(tok-ind, epos);
+        tmp.insert(tok-ind, esc);
+        ind = 0;
+    }
     while(std::regex_search(tmp, raw, rfunc)){
             tname = raw[1];
             if (std::regex_search(tmp, raw, rbody)){
@@ -108,9 +177,7 @@ void Runner::parseStructs(std::string code){
                 }
                 for (auto un : packed){
                     tcode = replaceall(tcode,un,varGet(un));
-                    varDel(un);
                 }
-                packed.clear();
                 temp = Program(tcode);
                 temp.setArgNames(arl);
                 placeholder = std::make_pair(tname,temp);
@@ -186,8 +253,9 @@ void Runner::varDel(std::string var) {
 
 void stripReserved(std::string& arg){
     std::vector<std::string> lst = {"{","}"};
+    arg = replaceall(arg, "\t", " ");
     for (auto ch : lst){
-        arg = replaceall(arg,ch,"");
+        arg = replaceall(arg, ch, "");
     }
 }
 
@@ -246,7 +314,7 @@ std::string Runner::solveMathExpr(std::string exprs){
     expression_t expression;
     exprs = replaceall(exprs,"**","^");
     mathparser.compile(exprs,expression);
-    return str(expression.value());
+    return str(expression.value(), prec);
 }
 
 std::string Runner::strExpConcat(std::string str){
@@ -347,6 +415,12 @@ bool Runner::isReadOnly(std::string var){
     return false;
 }
 
+void Runner::replaceArrays(std::string *where) {
+    for (auto un : packed){
+        *where = replaceall(*where, un, varGet(un));
+    }
+}
+
 std::string Runner::getArrayCell(std::string cmd){
 std::string rs = "", op, szb, ceb,arrname;
 std::smatch res;
@@ -362,12 +436,15 @@ if (std::regex_search(cmd, res, this->rarr)){    //([n]^array) <--nth element of
     if (dims.size() != cebs.size())
         return "";
     int i = 0;
-    std::string newsize = "", edim, ecebs;
+    std::string newsize = "", edim, ecebs, cell="";
     for (auto &dim : dims) {            //([1]^arr)%100
-        if (i>0)
+        if (i>0) {
             newsize+=",";
+            cell+=",";
+        }
         edim = parseBasicExpressions(dim);
         ecebs = parseBasicExpressions(cebs[i]);
+        cell += ecebs;
         if (atoi(edim.c_str())<atoi(ecebs.c_str()))
             dim = ecebs;
         else
@@ -375,15 +452,22 @@ if (std::regex_search(cmd, res, this->rarr)){    //([n]^array) <--nth element of
         newsize+=dim;
         i++;
     }
-    rs = "{(["+newsize+"]^"+arrname+")}";
+    rs = "{(["+cell+"]^"+arrname+")}";
     varForceSet(arrname, newsize);
 }
 return rs;
 }
 
-void Runner::panic(std::string err){
+long int timer() {
+    auto time = std::chrono::system_clock::now();
+    auto since_epoch = time.time_since_epoch();
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(since_epoch);
+    return millis.count();
+}
+
+void Runner::panic(std::string err) {
     std::cout<<"\n"<<err;
-    getline(std::cin, err);
+    getch();
     exit(-1);
 }
 
@@ -395,7 +479,7 @@ void Runner::exec(Program program, std::vector<std::string> args){
     std::string varlist, tmp;
     std::string arr;
     try {
-        while(i < len){
+        while(i < len) {
             cmd = program.queued[i];
             trim(cmd);
             arr = getArrayCell(cmd);
@@ -410,6 +494,8 @@ void Runner::exec(Program program, std::vector<std::string> args){
             }
             if (cmd.substr(0,2) == "${"){
                 cmd = varGet(cmd+";");
+                if (contains(cmd, "${arr$"))
+                    replaceArrays(&cmd);
                 auto rbf = split(cmd,"\\{\\$\\}");
                 std::string op = rbf[0];
                 trim(op);
@@ -474,8 +560,12 @@ void Runner::exec(Program program, std::vector<std::string> args){
                 trim(explist[0]);
                 trim(explist[1]);
                 ret = str(stod(parseBasicExpressions(explist[0])), atoi(parseBasicExpressions(explist[1]).c_str()));
-            }
-            else if (op == "out") {   //out^a," ",228;
+            } else if (op == "rnd") {   //rnd^min, max;
+                explist = parseList(arglist);
+                trim(explist[0]);
+                trim(explist[1]);
+                ret = str(randInt(atoi(explist[0].c_str()), atoi(explist[1].c_str())));
+            } else if (op == "out") {   //out^a," ",42;
                 varlist = arglist;
                 explist = parseList(varlist);
                 if (explist.size() == 0)
@@ -503,7 +593,11 @@ void Runner::exec(Program program, std::vector<std::string> args){
                     getline(std::cin, buf);
                     varSet(var, buf);
                 }
-            } else if (op == "return"){     //return^expr;
+            } else if (op == "prec") {  //prec^precicion;
+                explist = parseList(arglist);
+                prec = std::atoi(explist[0].c_str());
+            }
+            else if (op == "return"){     //return^expr;
                 ret = parseBasicExpressions(arglist);
             } else if (op == "len"){    //len^expr;
                 trim(arglist);
@@ -557,15 +651,20 @@ void Runner::exec(Program program, std::vector<std::string> args){
     }
     catch (const std::exception& e) {
         std::cout<<"Fatal error has occurred near "<<cmd<<std::endl<<e.what();
+        panic();
     }
 }
 
 void Runner::run(std::string code){
+    tb = timer();
     this->parseStructs(code);
+
     std::map<std::string,Program>::const_iterator entrypt = modules.find("entry");
     if (entrypt == modules.end()) {
         std::cout<<"Entry function not found."<<std::endl;
     } else {
         exec(entrypt->second);
     }
+    te = timer();
+    std::cout<<"End of program execution. "<<(double)((te-tb)/1000.0)<<" seconds elapsed.\n";
 }

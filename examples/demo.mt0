@@ -1,9 +1,9 @@
-(entry)[ //methan0l features demo;
+#(entry)[ //methan0l features demo;
 	tmc%5;
 	i%0;
 	out^"Cycle test!",$;
 
-	times (i,tmc*2)[		//cycles;
+	#times (i,tmc*2)[		//cycles;
 		out^"test ",i,$;
 	]
 	
@@ -11,22 +11,22 @@
 	def^a%100, b%a+25*10, c%"a+b=";		//variable definition (optional);
 	out^"a=", a, " b=", b, " ", c, a+b, $;	//output;
 
-	if (a>0 and b>a)[	//if block;
+	#if (a>0 and b>a)[	//if block;
 		out^"a is greater than 0 and b is greater than a",$;
 	]
 
-	if (a=0)[	//if-else block;
+	#if (a=0)[	//if-else block;
 		out^"Not gonna happen",$;
-	] else [
+	] #else [
 		out^"a is not a zero",$;
 	]
 
 	out^"Input test and basic maths",$;
 	in^"First number: ",num1,"Second number: ",num2;		//input with prompt strings;
 	out^"******************************************",$;
-	if (num1 == num2)[
+	#if (num1 == num2)[
 		out^"Equal",$;
-	] else [
+	] #else [
 		out^"Not equal",$;
 	]
 	out^"Summation: ", num1+num2, $, "Subtraction: ", num1-num2, $, "Multiplication: ", num1*num2, $;
@@ -52,6 +52,6 @@
 	foo^;
 ]
 
-(foo)[
+#(foo)[
 	out^"I am a dummy function!",$;
 ]

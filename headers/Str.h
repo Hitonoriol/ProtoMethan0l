@@ -1,7 +1,5 @@
-struct desclist
-{
-    bool operator()(std::string const& l, std::string const& r) const
-    {
+struct desclist {
+    bool operator()(std::string const& l, std::string const& r) const {
         if (l.size() < r.size())
             return false;
         if (l.size() > r.size())
@@ -13,7 +11,7 @@ struct desclist
 typedef std::map<std::string, std::string, desclist> varlist_t;
 
 template <typename T>
-std::string strprec(const T a_value, const int n) {
+std::string strprec(const T a_value, int n) {
     std::ostringstream out;
     out.precision(n);
     out << std::fixed << a_value;
@@ -21,7 +19,7 @@ std::string strprec(const T a_value, const int n) {
 }
 
 template<class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::string>::type str(const T& t, const int prc = 6) {
+typename std::enable_if<std::is_fundamental<T>::value, std::string>::type str(const T& t, int prc = 6) {
     return strprec(t, prc);
 }
 

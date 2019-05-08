@@ -1,17 +1,17 @@
-(entry)[
+#(entry)[
 	in^"Enter a sentence: ",text;
 	end % len^text;
 	i % 0;
 	words % 1;
 	curWord^;
-	while (i<end)[
+	#while (i<end)[
 		char % (i,1)^text;	//functions in if and while statements are forbidden;
-		if (char == " ") [
+		#if (char == " ") [
 			out^$;
 			words % words+1;
 			curWord^;
 		]
-		else [
+		#else [
 			out^((i,1)^text);
 		]
 		i % i+1;
@@ -19,6 +19,6 @@
 	out^$, "Your sentence contains ",(round^words,0)," words!",$;
 ]
 
-(curWord)[
+#(curWord)[
 	out^"#",(round^words,0),": ";
 ]

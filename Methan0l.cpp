@@ -14,16 +14,14 @@ if (argc > 1){
         std::cout<<"Methan0l::";
         getline(std::cin, in);
         stripReserved(in);
-        if (in == "dump"){
+        if (in == "dump")
             methan0l.dump();
-        }
-        else if (isMathExp(in)){
-            std::cout<<methan0l.parseBasicExpressions(in);
-        }
         else if (containsAll(in, {"(",")","[","]","entry"}))
             methan0l.run(in);
+        else if (isMathExp(in))
+            std::cout<<methan0l.parseBasicExpressions(in);
         else
-            methan0l.run("(entry)[" + in + ";]");
+            methan0l.run("#(entry)[" + in + ";]");
         methan0l.purge(false);
         std::cout<<std::endl;
     }
