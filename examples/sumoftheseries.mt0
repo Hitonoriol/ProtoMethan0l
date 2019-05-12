@@ -4,7 +4,7 @@
 	csum % 0;
 	an % 1;
 	limit % 0.0001;
-	#while (an > limit)[
+	#while ((an > limit))[
 		an % countCurrent^;
 		csum % an+csum;
 		out^(round^i,0)," --> ",an,$;

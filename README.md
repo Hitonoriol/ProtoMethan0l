@@ -41,14 +41,20 @@ Example:
 
 ! if and while operators accept only variables, (==|<|>|!=), (and|or).
 
-#if (var1 ==|<|>|!= var2 and|or ...)[
+#if ( (var1 =|<|>|!= var2) [&,|] (...) ...)[
 	...
 ] #else [
 	...
 ]
 
-#while (var1 ==|<|>|!= var2 and|or ...)[
+#while ( (var1 =|<|>|!= var2) [&,|] (...) )[
 	...
+]
+
+Example:
+#while ((i<10) & (!flag))[
+	doSomething^;
+	+^i;
 ]
 
 Return from function:

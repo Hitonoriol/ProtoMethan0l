@@ -1,6 +1,6 @@
 #(entry)[
 	def^i % 1;
-	#while(true)[
+	#while((1))[
 		out^"Sum #", i, $;
 		out^doTheThing^, $, $;
 		i % i+1;

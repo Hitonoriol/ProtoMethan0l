@@ -15,11 +15,11 @@
 #include <set>
 #include <conio.h>
 #include <chrono>
+#include "tinyexpr.h"
 #include "Str.h"
 
 bool containsAll(std::string str, std::vector<std::string> wlist);
 void stripReserved(std::string& arg);
-std::string randString(size_t len = 32);
 bool isMathExp(std::string arg);
 bool contains(std::string str, std::string what);
 std::string replaceall(std::string subject, const std::string& search, const std::string& replace);
@@ -124,12 +124,6 @@ class Runner{
     public:
         long int tb, te;
         int prec = 6;
-        typedef exprtk::symbol_table<double> symbol_table_t;
-        typedef exprtk::expression<double>     expression_t;
-        typedef exprtk::expression<double>     logicalexpr_t;
-        typedef exprtk::parser<double>             parser_t;
-        parser_t mathparser;
-        parser_t logicparser;
         int randInt(int min, int max);
         void varForceSet(std::string var, auto what);
         bool isReadOnly(std::string var);
@@ -139,6 +133,11 @@ class Runner{
         void varDel(std::string var);
         bool parseLogicalExpression(std::string str);
         void panic(std::string err = "An error has occurred.");
+        int op_preced(const char c);
+        bool op_left_assoc(const char c);
+        unsigned int op_arg_count(const char c);
+        bool shunting_yard(const char *input, char *output);
+        bool evalBoolExpr(const char * expr);
         std::string genUniqueVarID();
         std::string escByPattern(std::string str, std::regex rgx, std::string structname);
         std::string getArrayCell(std::string cmd);
@@ -148,6 +147,7 @@ class Runner{
         std::string parseBasicExpressions(std::string str, std::string excl = "none");
         std::string solveMathExpr(std::string exprs);
         std::regex rfunc, rbody, rtimes, rif, rwhile, rnest, rsubstr, rarr, relse;
+        std::regex rlogop;
         std::string strExpConcat(std::string str);
         std::string replaceVarExp(std::string str, bool ifs = false);
         void varSet(std::string var, auto what);

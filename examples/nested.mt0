@@ -1,9 +1,9 @@
 #(entry)[
 	flag % 1;
 	i % 0;
-	#while(flag == 1)[
+	#while((flag = 1))[
 		out^"Yeah",$;
-		#if(i == 10)[
+		#if((i = 10))[
 			#times(x, 10)[
 				out^"Inner cycle",$;
 			]

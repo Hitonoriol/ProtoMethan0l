@@ -4,9 +4,9 @@
 	i % 0;
 	words % 1;
 	curWord^;
-	#while (i<end)[
+	#while ((i<end))[
 		char % (i,1)^text;	//functions in if and while statements are forbidden;
-		#if (char == " ") [
+		#if ((char = " ")) [
 			out^$;
 			words % words+1;
 			curWord^;

@@ -2,17 +2,33 @@
 
 // (entry)[def a,b,c; get a,b,c; inc a; dmp a;](sub:arg1,arg2,arg3)[arg1+arg2-arg3=sub; ret;]
 
+std::string randString(size_t length) {
+    auto randchar = []() -> char {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
+}
+
 Runner::Runner(){
     srand (time(NULL));
-    this->rfunc = "\\((.*?)\\)";
-    this->rbody = "\\[(.*?)\\]";
-    this->rtimes = "times.*?\\((.*?)\\)\\s*\\[(.*?)\\]";
-    this->rwhile = "while.*?\\((.*?)\\)\\s*\\[(.*?)\\]";
-    this->rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
-    this->relse = "\\s*else(\\s*\\[(.*?)\\])";
-    this->rnest = "(\\((.*?)\\^(.*?)\\))";
-    this->rsubstr = "(\\((.*?)\\))\\s*\\^";
-    this->rarr = "(\\(\\s*\\[(.*?)\\])\\s*\\^\\s*(.*?)\\)";
+    rfunc = "\\((.*?)\\)";
+    rbody = "\\[(.*?)\\]";
+    rtimes = "times.*?\\((.*?)\\)\\s*\\[(.*?)\\]";
+    rwhile = "while.*?\\((.*?)\\)\\s*\\[(.*?)\\]";
+    rif = "if\\s*\\((.*?)\\)\\s*\\s*\\[(.*?)\\]\\s*(else)?(\\s*\\[(.*?)\\])?";
+    relse = "\\s*else(\\s*\\[(.*?)\\])";
+    rnest = "(\\((.*?)\\^(.*?)\\))";
+    rsubstr = "(\\((.*?)\\))\\s*\\^";
+    rarr = "(\\(\\s*\\[(.*?)\\])\\s*\\^\\s*(.*?)\\)";
+
+    rlogop = "\\((.+?)(\\>\\=|\\<\\=|\\!\\=|\\<|\\>|\\=)(.+?)\\)";
 }
 
 int Runner::randInt(int min, int max) {
@@ -187,21 +203,6 @@ void Runner::parseStructs(std::string code){
     }
 }
 
-std::string randString(size_t length) {
-    auto randchar = []() -> char
-    {
-        const char charset[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-        const size_t max_index = (sizeof(charset) - 1);
-        return charset[ rand() % max_index ];
-    };
-    std::string str(length,0);
-    std::generate_n( str.begin(), length, randchar );
-    return str;
-}
-
 void Runner::dump(){
     std::cout<<"Variable dump"<<'\n';
     for (auto dmp : this->var){
@@ -311,10 +312,8 @@ std::string strim (std::string str){
 }
 
 std::string Runner::solveMathExpr(std::string exprs){
-    expression_t expression;
     exprs = replaceall(exprs,"**","^");
-    mathparser.compile(exprs,expression);
-    return str(expression.value(), prec);
+    return str(te_interp(exprs.c_str(), 0), prec);
 }
 
 std::string Runner::strExpConcat(std::string str){
@@ -355,11 +354,42 @@ bool Runner::funcExists(std::string func){
 }
 
 bool Runner::parseLogicalExpression(std::string str){
-    logicalexpr_t expression;
     str = replaceVarExp(str,true);
-    str = replaceall(str,"\"","'");
-    logicparser.compile(str,expression);
-    return expression.value();
+    str = replaceall(str,"\"","");
+    std::smatch res;
+    std::string op, v1, v2;
+    double n1, n2;
+    int ret;
+    while(std::regex_search(str, res, rlogop)) {
+        op = res.str(2);
+        v1 = res.str(1);
+        v2 = res.str(3);
+        if (op == ">" || op == "<" || op == "<=" || op == ">=") {
+            n1 = std::stod(v1);
+            n2 = std::stod(v2);
+            if (n1 > n2 && op == ">")
+                ret = 1;
+            else if (n1 > n2 && op == "<")
+                ret = 0;
+            else if (n1 >= n2 && op == ">=")
+                ret = 1;
+            else if (n1 < n2 && op == "<")
+                ret = 1;
+            else
+                ret = 0;
+            }
+            else if (op == "=" || op == "!=") {
+                if (v1 == v2 && op == "=")
+                    ret = 1;
+                else if (v1 == v2 && op == "!=")
+                    ret = 0;
+            } else
+                ret = 0;
+        str.erase(res.position(), res.length());
+        str.insert(res.position(), std::to_string(ret));
+    }
+    bool fr = evalBoolExpr(str.c_str());
+    return fr;
 }
 
 std::string Runner::parseBasicExpressions(std::string str, std::string excl){
@@ -645,7 +675,7 @@ void Runner::exec(Program program, std::vector<std::string> args){
     }
 }
 
-void Runner::run(std::string code){
+void Runner::run(std::string code) {
     tb = timer();
     this->parseStructs(code);
 

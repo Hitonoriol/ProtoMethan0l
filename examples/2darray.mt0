@@ -3,8 +3,8 @@
 	i%0;
 	j%0;
 	out^"Random 10x10 array", $;
-	#while(i<10)[
-		#while(j<10)[
+	#while((i<10))[
+		#while((j<10))[
 			([i,j]^arr)%rnd^1,50;
 			out^([i,j]^arr), " ";
 			j%j+1;
