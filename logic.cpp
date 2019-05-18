@@ -155,7 +155,7 @@ bool Runner::shunting_yard(const char *input, char *output) {
 bool Runner::evalBoolExpr(const char * expr)  {
     char output[500] = {0};
     char * op;
-    bool tmp;
+    bool tmp = false;
     char part1[250], part2[250];
 
     if(!shunting_yard(expr, output))

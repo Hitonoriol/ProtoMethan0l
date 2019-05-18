@@ -195,7 +195,7 @@ void Runner::parseStructs(std::string code){
                     tcode = replaceall(tcode,un,varGet(un));
                 }
                 temp = Program(tcode);
-                temp.setArgNames(arl);
+                temp.setArgNames(tname+"{$}"+arl);
                 placeholder = std::make_pair(tname,temp);
                 modules.insert(placeholder);
             }
@@ -274,7 +274,7 @@ bool isNum(std::string s){
 }
 
 bool isMathExp(std::string arg){
-    std::string sexp[] = {"**","+","-","*","/","sqrt","sin","cos","pi","abs"};
+    std::string sexp[] = {"**","+","-","*","/","sqrt","sin","cos","abs"};
     for (auto s : sexp){
         if (arg.find(s)!=std::string::npos){
             return true;
@@ -502,6 +502,12 @@ void Runner::panic(std::string err) {
 }
 
 void Runner::exec(Program program, std::vector<std::string> args){
+    int ci = 0;
+    if (args.size() > 0)
+        for (auto an : program.argn){
+            varSet(an, args[ci]);
+            ci++;
+        }
     std::size_t len = program.queued.size(), i = 0;
     std::smatch res;
     std::string cmd, arglist, op;
@@ -573,6 +579,9 @@ void Runner::exec(Program program, std::vector<std::string> args){
 
             } else if (op == "+") {
                 varSet(explist[0], str(atoi(varGet(explist[0]).c_str())+1));
+            } else if (op == "del") {   //del^var, arr, var2;
+                for (auto elem : explist)
+                    varDel(elem);
             } else if (op == "-") {
                 varSet(explist[0], str(atoi(varGet(explist[0]).c_str())-1));
             }
@@ -676,6 +685,7 @@ void Runner::exec(Program program, std::vector<std::string> args){
 }
 
 void Runner::run(std::string code) {
+    Program shit(code);
     tb = timer();
     this->parseStructs(code);
 

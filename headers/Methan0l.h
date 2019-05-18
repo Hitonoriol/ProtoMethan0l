@@ -109,10 +109,12 @@ class Files{
 
 class Program{
     public:
+    std::vector<std::string> lts;
     std::string contents;
     int args;
     std::vector<std::string> queued;
     std::vector<std::string> argn;
+        void replaceLiterals(std::string *where);
         void setArgNames(std::vector<std::string> argsn);
         Program(std::string contents="nop;");
         void queueExec();
